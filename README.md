@@ -1,6 +1,10 @@
 # Redis::Sentinel
 
-TODO: Write a gem description
+monkey patch [redis-rb][0] to support redis sentinel.
+
+it subscribes message with channel "+switch-master", when message
+received, it will disconnect current connection and connect to new
+master server.
 
 ## Installation
 
@@ -18,7 +22,10 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+Specify the sentinel servers and master name
+
+    Redis.new(master_name: "master1", sentinels: [{host: "localhost",
+port: 26379}, {host: "localhost", port: 26380])
 
 ## Contributing
 
@@ -27,3 +34,5 @@ TODO: Write usage instructions here
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
+
+[0]: https://github.com/redis/redis-rb
