@@ -24,8 +24,7 @@ Or install it yourself as:
 
 Specify the sentinel servers and master name
 
-    Redis.new(master_name: "master1", sentinels: [{host: "localhost",
-port: 26379}, {host: "localhost", port: 26380])
+    Redis.new(master_name: "master1", sentinels: [{host: "localhost", port: 26379}, {host: "localhost", port: 26380}])
 
 ## Contributing
 
