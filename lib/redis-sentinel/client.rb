@@ -5,7 +5,6 @@ class Redis::Client
     def initiliaze_with_sentinel(options={})
       @master_name = options.delete(:master_name) || options.delete("master_name")
       @sentinels = options.delete(:sentinels) || options.delete("sentinels")
-      @watcher = Thread.new { watch_sentinel } if sentinel?
       initialize_without_sentinel(options)
     end
 
@@ -48,35 +47,6 @@ class Redis::Client
           break
         rescue Redis::CannotConnectError
           try_next_sentinel
-        end
-      end
-    end
-
-    def watch_sentinel
-      while true
-        sentinel = Redis.new(@sentinels[0])
-
-        begin
-          sentinel.psubscribe("*") do |on|
-            on.pmessage do |pattern, channel, message|
-              next if channel != "+switch-master"
-
-              master_name, old_host, old_port, new_host, new_port = message.split(" ")
-
-              next if master_name != @master_name
-
-              @options.merge!(host: new_host, port: new_port.to_i)
-
-              if @logger && @logger.debug?
-                @logger.debug "Failover: #{old_host}:#{old_port} => #{new_host}:#{new_port}"
-              end
-
-              disconnect
-            end
-          end
-        rescue Redis::CannotConnectError
-          try_next_sentinel
-          sleep 1
         end
       end
     end
