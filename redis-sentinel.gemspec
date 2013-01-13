@@ -8,8 +8,8 @@ Gem::Specification.new do |gem|
   gem.version       = Redis::Sentinel::VERSION
   gem.authors       = ["Richard Huang"]
   gem.email         = ["flyerhzm@gmail.com"]
-  gem.description   = %q{monkey patch redis-rb to support redis sentinel}
-  gem.summary       = %q{monkey patch redis-rb to support redis sentinel}
+  gem.description   = %q{another redis automatic master/slave failover solution for ruby by using built-in redis sentinel}
+  gem.summary       = %q{another redis automatic master/slave failover solution for ruby by using built-in redis sentinel}
   gem.homepage      = "https://github.com/flyerhzm/redis-sentinel"
 
   gem.files         = `git ls-files`.split($/)
