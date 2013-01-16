@@ -40,7 +40,7 @@ class Redis::Client
         begin
           host, port = sentinel.sentinel("get-master-addr-by-name", @master_name)
           if !host && !port
-            raise Redis::ConnectionError("No master named: #{@master_name}")
+            raise Redis::ConnectionError.new("No master named: #{@master_name}")
           end
           @options.merge!(host: host, port: port.to_i)
 
