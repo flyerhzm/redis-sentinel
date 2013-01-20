@@ -42,7 +42,7 @@ class Redis::Client
           if !host && !port
             raise Redis::ConnectionError.new("No master named: #{@master_name}")
           end
-          @options.merge!(host: host, port: port.to_i)
+          @options.merge!(:host => host, :port => port.to_i)
 
           break
         rescue Redis::CannotConnectError
