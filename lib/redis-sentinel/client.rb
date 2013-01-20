@@ -2,14 +2,14 @@ require "redis"
 
 class Redis::Client
   class_eval do
-    def initiliaze_with_sentinel(options={})
+    def initialize_with_sentinel(options={})
       @master_name = options.delete(:master_name) || options.delete("master_name")
       @sentinels = options.delete(:sentinels) || options.delete("sentinels")
       initialize_without_sentinel(options)
     end
 
     alias initialize_without_sentinel initialize
-    alias initialize initiliaze_with_sentinel
+    alias initialize initialize_with_sentinel
 
     def connect_with_sentinel
       discover_master if sentinel?
@@ -42,7 +42,7 @@ class Redis::Client
           if !host && !port
             raise Redis::ConnectionError.new("No master named: #{@master_name}")
           end
-          @options.merge!(host: host, port: port.to_i)
+          @options.merge!(:host => host, :port => port.to_i)
 
           break
         rescue Redis::CannotConnectError
