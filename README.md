@@ -27,6 +27,15 @@ Specify the sentinel servers and master name
 
     Redis.new(master_name: "master1", sentinels: [{host: "localhost", port: 26379}, {host: "localhost", port: 26380}])
 
+There are two additional options: 
+
+1. `:failover_reconnect_timeout` (seconds) will block for that long when
+   redis is unreachable to give failover enough time to take place. Does
+   not wait if not given, or time given is 0.
+
+2. `:failover_reconnect_wait` (seconds) how long to sleep after each
+   failed reconnect during a failover event. Defaults to 0.1s.
+
 ## Example
 
 start redis master server, listen on port 16379
@@ -56,10 +65,22 @@ $ bundle exec ruby example/test.rb
 
 You will see output "bar" every second. Let's try the failover process.
 
-1. stop redis master server
-2. you will see error message output
-3. redis sentinel promote redis slave server to master
-4. then you will see correct "bar" output every second again
+1. Stop redis master server.
+2. You will see error message output.
+3. Redis sentinel promote redis slave server to master. During this time
+   you will see errors instead of "bar" while the failover is happening.
+4. Then you will see correct "bar" output every second again.
+
+## Example of Failover Timeout
+Run the same example code above but run:
+
+```
+$ bundle exec ruby example/test_wait_for_failover.rb
+```
+
+You will see the stream of "bar" will stop while failover is taking
+place and will resume once it has completed, provided that failover
+takes less than 30 seconds.
 
 ## Contributing
 
