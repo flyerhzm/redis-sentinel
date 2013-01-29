@@ -31,11 +31,15 @@ class Redis::Client
       return @sentinels[0]
     end
 
-    def discover_master
-      masters = []
+    def redis_sentinels
+      @redis_sentinels ||= Hash.new do |hash, config|
+        hash[config] = Redis.new(config)
+      end
+    end
 
+    def discover_master
       while true
-        sentinel = Redis.new(@sentinels[0])
+        sentinel = redis_sentinels[@sentinels[0]]
 
         begin
           host, port = sentinel.sentinel("get-master-addr-by-name", @master_name)
