@@ -1,6 +1,14 @@
 require "spec_helper"
 
 describe Redis::Client do
+  let(:redis) { mock("Redis", :sentinel => ["remote.server", 8888])}
+
+  subject { Redis::Client.new(:master_name => "master",
+                              :sentinels => [{:host => "localhost", :port => 26379},
+                                             {:host => "localhost", :port => 26380}]) }
+
+  before { Redis.stub(:new).and_return(redis) }
+
   context "#sentinel?" do
     it "should be true if passing sentiels and master_name options" do
       expect(Redis::Client.new(:master_name => "master", :sentinels => [{:host => "localhost", :port => 26379}, {:host => "localhost", :port => 26380}])).to be_sentinel
@@ -20,21 +28,31 @@ describe Redis::Client do
   end
 
   context "#try_next_sentinel" do
-    let(:client) { Redis::Client.new(:master_name => "master", :sentinels => [{:host => "localhost", :port => 26379}, {:host => "localhost", :port => 26380}]) }
-
     it "should return next sentinel server" do
-      expect(client.try_next_sentinel).to eq({:host => "localhost", :port => 26380})
+      expect(subject.try_next_sentinel).to eq({:host => "localhost", :port => 26380})
     end
   end
 
   context "#discover_master" do
-    let(:client) { Redis::Client.new(:master_name => "master", :sentinels => [{:host => "localhost", :port => 26379}, {:host => "localhost", :port => 26380}]) }
-    before { Redis.any_instance.should_receive(:sentinel).with("get-master-addr-by-name", "master").and_return(["remote.server", 8888]) }
+    it "gets the current master" do
+      redis.should_receive(:sentinel).
+            with("get-master-addr-by-name", "master")
+      subject.discover_master
+    end
 
     it "should update options" do
-      client.discover_master
-      expect(client.host).to eq "remote.server"
-      expect(client.port).to eq 8888
+      subject.discover_master
+      expect(subject.host).to eq "remote.server"
+      expect(subject.port).to eq 8888
+    end
+
+    describe "memoizing sentinel connections" do
+      it "does not reconnect to the sentinels" do
+        Redis.should_receive(:new).once
+
+        subject.discover_master
+        subject.discover_master
+      end
     end
   end
 end
