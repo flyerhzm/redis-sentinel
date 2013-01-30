@@ -55,4 +55,70 @@ describe Redis::Client do
       end
     end
   end
+
+  context "#auto_retry_with_timeout" do
+    context "no failover reconnect timeout set" do
+      subject { Redis::Client.new }
+
+      it "does not sleep" do
+        subject.should_not_receive(:sleep)
+        expect do
+          subject.auto_retry_with_timeout { raise Redis::CannotConnectError }
+        end.to raise_error(Redis::CannotConnectError)
+      end
+    end
+
+    context "the failover reconnect timeout is set" do
+      subject { Redis::Client.new(:failover_reconnect_timeout => 3) }
+
+      before(:each) do
+        subject.stub(:sleep)
+      end
+
+      it "only raises after the failover_reconnect_timeout" do
+        called_counter = 0
+        Time.stub(:now).and_return(100, 101, 102, 103, 104, 105)
+
+        begin
+          subject.auto_retry_with_timeout do
+            called_counter += 1
+            raise Redis::CannotConnectError
+          end
+        rescue Redis::CannotConnectError
+        end
+
+        called_counter.should == 4
+      end
+
+      it "sleeps the default wait time" do
+        Time.stub(:now).and_return(100, 101, 105)
+        subject.should_receive(:sleep).with(0.1)
+        begin
+          subject.auto_retry_with_timeout { raise Redis::CannotConnectError }
+        rescue Redis::CannotConnectError
+        end
+      end
+
+      it "does not catch other errors" do
+        subject.should_not_receive(:sleep)
+        expect do
+          subject.auto_retry_with_timeout { raise Redis::ConnectionError }
+        end.to raise_error(Redis::ConnectionError)
+      end
+
+      context "configured wait time" do
+        subject { Redis::Client.new(:failover_reconnect_timeout => 3,
+                                    :failover_reconnect_wait => 0.01) }
+
+        it "uses the configured wait time" do
+          Time.stub(:now).and_return(100, 101, 105)
+          subject.should_receive(:sleep).with(0.01)
+          begin
+            subject.auto_retry_with_timeout { raise Redis::CannotConnectError }
+          rescue Redis::CannotConnectError
+          end
+        end
+      end
+    end
+  end
 end

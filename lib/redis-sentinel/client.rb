@@ -1,10 +1,16 @@
 require "redis"
 
 class Redis::Client
+  DEFAULT_FAILOVER_RECONNECT_WAIT_SECONDS = 0.1
+
   class_eval do
     def initialize_with_sentinel(options={})
-      @master_name = options.delete(:master_name) || options.delete("master_name")
-      @sentinels = options.delete(:sentinels) || options.delete("sentinels")
+      @master_name = fetch_option(options, :master_name)
+      @sentinels = fetch_option(options, :sentinels)
+      @failover_reconnect_timeout = fetch_option(options, :failover_reconnect_timeout)
+      @failover_reconnect_wait = fetch_option(options, :failover_reconnect_wait) ||
+                                 DEFAULT_FAILOVER_RECONNECT_WAIT_SECONDS
+
       initialize_without_sentinel(options)
     end
 
@@ -12,8 +18,14 @@ class Redis::Client
     alias initialize initialize_with_sentinel
 
     def connect_with_sentinel
-      discover_master if sentinel?
-      connect_without_sentinel
+      if sentinel?
+        auto_retry_with_timeout do
+          discover_master
+          connect_without_sentinel
+        end
+      else
+        connect_without_sentinel
+      end
     end
 
     alias connect_without_sentinel connect
@@ -23,18 +35,23 @@ class Redis::Client
       @master_name && @sentinels
     end
 
+    def auto_retry_with_timeout(&block)
+      deadline = @failover_reconnect_timeout.to_i + Time.now.to_f
+      begin
+        block.call
+      rescue Redis::CannotConnectError
+        raise if Time.now.to_f > deadline
+        sleep @failover_reconnect_wait
+        retry
+      end
+    end
+
     def try_next_sentinel
       @sentinels << @sentinels.shift
       if @logger && @logger.debug?
         @logger.debug? "Trying next sentinel: #{@sentinels[0][:host]}:#{@sentinels[0][:port]}"
       end
       return @sentinels[0]
-    end
-
-    def redis_sentinels
-      @redis_sentinels ||= Hash.new do |hash, config|
-        hash[config] = Redis.new(config)
-      end
     end
 
     def discover_master
@@ -52,6 +69,18 @@ class Redis::Client
         rescue Redis::CannotConnectError
           try_next_sentinel
         end
+      end
+    end
+
+  private
+
+    def fetch_option(options, key)
+      options.delete(key) || options.delete(key.to_s)
+    end
+
+    def redis_sentinels
+      @redis_sentinels ||= Hash.new do |hash, config|
+        hash[config] = Redis.new(config)
       end
     end
   end
