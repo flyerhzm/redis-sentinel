@@ -49,7 +49,7 @@ class Redis::Client
     def try_next_sentinel
       @sentinels << @sentinels.shift
       if @logger && @logger.debug?
-        @logger.debug? "Trying next sentinel: #{@sentinels[0][:host]}:#{@sentinels[0][:port]}"
+        @logger.debug "Trying next sentinel: #{@sentinels[0][:host]}:#{@sentinels[0][:port]}"
       end
       return @sentinels[0]
     end
