@@ -63,12 +63,17 @@ class Redis::Client
           if !host && !port
             raise Redis::ConnectionError.new("No master named: #{@master_name}")
           end
-          @options.merge!(:host => host, :port => port.to_i)
-
-          break
+          is_down, runid = sentinel.sentinel("is-master-down-by-addr", host, port)
         rescue Redis::CannotConnectError
           try_next_sentinel
         end
+        if is_down == "1" || runid == '?'
+          raise Redis::CannotConnectError.new("The master: #{@master_name} is currently not available.")
+        else
+          @options.merge!(:host => host, :port => port.to_i)
+        end
+
+        break
       end
     end
 

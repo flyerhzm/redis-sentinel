@@ -37,13 +37,31 @@ describe Redis::Client do
     it "gets the current master" do
       redis.should_receive(:sentinel).
             with("get-master-addr-by-name", "master")
+      redis.should_receive(:sentinel).
+            with("is-master-down-by-addr", "remote.server", 8888)
       subject.discover_master
     end
 
     it "should update options" do
+      redis.should_receive(:sentinel).
+            with("is-master-down-by-addr", "remote.server", 8888).once.
+            and_return(["0", "abc"])
       subject.discover_master
       expect(subject.host).to eq "remote.server"
       expect(subject.port).to eq 8888
+    end
+
+    it "should not update options" do
+      redis.should_receive(:sentinel).
+            with("is-master-down-by-addr", "remote.server", 8888).twice.
+            and_return(["1", "abc"], ["0", "?"])
+      2.times do
+        expect do
+          subject.discover_master
+        end.to raise_error(Redis::CannotConnectError, /currently not available/)
+        expect(subject.host).not_to eq "remote.server"
+        expect(subject.port).not_to eq 8888
+      end
     end
 
     describe "memoizing sentinel connections" do
