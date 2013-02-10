@@ -64,6 +64,21 @@ describe Redis::Client do
       end
     end
 
+    it "should select next sentinel" do
+      Redis.should_receive(:new).with({:host => "localhost", :port => 26379})
+      redis.should_receive(:sentinel).
+            with("get-master-addr-by-name", "master").
+            and_raise(Redis::CannotConnectError)
+      Redis.should_receive(:new).with({:host => "localhost", :port => 26380})
+      redis.should_receive(:sentinel).
+            with("get-master-addr-by-name", "master")
+      redis.should_receive(:sentinel).
+            with("is-master-down-by-addr", "remote.server", 8888)
+      subject.discover_master
+      expect(subject.host).to eq "remote.server"
+      expect(subject.port).to eq 8888
+    end
+
     describe "memoizing sentinel connections" do
       it "does not reconnect to the sentinels" do
         Redis.should_receive(:new).once
