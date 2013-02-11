@@ -1,9 +1,9 @@
 # Redis::Sentinel
 
-another redis automatic master/slave failover solution for ruby by
+Another redis automatic master/slave failover solution for ruby by
 using built-in redis sentinel.
 
-it subscribes message with channel "+switch-master", when message
+It subscribes message with channel "+switch-master", when message
 received, it will disconnect current connection and connect to new
 master server.
 
@@ -27,7 +27,7 @@ Specify the sentinel servers and master name
 
     Redis.new(master_name: "master1", sentinels: [{host: "localhost", port: 26379}, {host: "localhost", port: 26380}])
 
-There are two additional options: 
+There are two additional options:
 
 1. `:failover_reconnect_timeout` (seconds) will block for that long when
    redis is unreachable to give failover enough time to take place. Does
@@ -38,26 +38,26 @@ There are two additional options:
 
 ## Example
 
-start redis master server, listen on port 16379
+Start redis master server, listen on port 16379
 
 ```
 $ redis-server example/redis-master.conf
 ```
 
-start redis slave server, listen on  port 16380
+Start redis slave server, listen on  port 16380
 
 ```
 $ redis-server example/redis-slave.conf
 ```
 
-start 2 sentinel servers
+Start 2 sentinel servers
 
 ```
 $ redis-server example/redis-sentinel1.conf --sentinel
 $ redis-server example/redis-sentinel2.conf --sentinel
 ```
 
-run example/test.rb, which will query value of key "foo" every second.
+Run example/test.rb, which will query value of key "foo" every second.
 
 ```
 $ bundle exec ruby example/test.rb
@@ -82,12 +82,18 @@ You will see the stream of "bar" will stop while failover is taking
 place and will resume once it has completed, provided that failover
 takes less than 30 seconds.
 
-## Contributing
+## Authors and Contributors
 
-1. Fork it
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
+* [Richard Huang](https://github.com/flyerhzm) - Creator of the project
+* [Donald Plummer](https://github.com/dplummer) - Add wait / timeout for
+  redis connection
+* [Rafał Michalski](https://github.com/royaltm) - Ensure promoted slave
+  become master
 
-[0]: https://github.com/redis/redis-rb
+Please fork and contribute, any help in making this project better is appreciated!
+
+This project is a member of the [OSS Manifesto](http://ossmanifesto.org/).
+
+## Copyright
+
+Copyright @ 2012 - 2013 Richard Huang. See [MIT-LICENSE](https://github.com/flyerhzm/redis-sentinel/blob/master/MIT-LICENSE) for details
