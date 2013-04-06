@@ -70,7 +70,7 @@ class Redis::Client
         end
       end
 
-      if is_down == "1" || runid == '?'
+      if is_down.to_s == "1" || runid == '?'
         raise Redis::CannotConnectError.new("The master: #{@master_name} is currently not available.")
       else
         @options.merge!(:host => host, :port => port.to_i)
