@@ -6,6 +6,7 @@ class Redis::Client
   class_eval do
     def initialize_with_sentinel(options={})
       @master_name = fetch_option(options, :master_name)
+      @master_password = fetch_option(options, :master_password)
       @sentinels = fetch_option(options, :sentinels)
       @failover_reconnect_timeout = fetch_option(options, :failover_reconnect_timeout)
       @failover_reconnect_wait = fetch_option(options, :failover_reconnect_wait) ||
@@ -73,7 +74,7 @@ class Redis::Client
       if is_down.to_s == "1" || runid == '?'
         raise Redis::CannotConnectError.new("The master: #{@master_name} is currently not available.")
       else
-        @options.merge!(:host => host, :port => port.to_i)
+        @options.merge!(:host => host, :port => port.to_i, :password => @master_password)
       end
     end
 

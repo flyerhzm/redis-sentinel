@@ -3,7 +3,7 @@ require "spec_helper"
 describe Redis::Client do
   let(:redis) { mock("Redis", :sentinel => ["remote.server", 8888])}
 
-  subject { Redis::Client.new(:master_name => "master",
+  subject { Redis::Client.new(:master_name => "master", :master_password => "foobar",
                               :sentinels => [{:host => "localhost", :port => 26379},
                                              {:host => "localhost", :port => 26380}]) }
 
@@ -49,6 +49,7 @@ describe Redis::Client do
       subject.discover_master
       expect(subject.host).to eq "remote.server"
       expect(subject.port).to eq 8888
+      expect(subject.password).to eq "foobar"
     end
 
     it "should not update options" do
@@ -61,7 +62,21 @@ describe Redis::Client do
         end.to raise_error(Redis::CannotConnectError, /currently not available/)
         expect(subject.host).not_to eq "remote.server"
         expect(subject.port).not_to eq 8888
+        expect(subject.password).not_to eq "foobar"
       end
+    end
+
+    it "should not use a password" do
+      Redis.should_receive(:new).with({:host => "localhost", :port => 26379})
+      redis.should_receive(:sentinel).with("get-master-addr-by-name", "master")
+      redis.should_receive(:sentinel).with("is-master-down-by-addr", "remote.server", 8888)
+
+      redis = Redis::Client.new(:master_name => "master", :sentinels => [{:host => "localhost", :port => 26379}])
+      redis.discover_master
+
+      expect(redis.host).to eq "remote.server"
+      expect(redis.port).to eq 8888
+      expect(redis.password).to eq nil
     end
 
     it "should select next sentinel" do
@@ -77,6 +92,7 @@ describe Redis::Client do
       subject.discover_master
       expect(subject.host).to eq "remote.server"
       expect(subject.port).to eq 8888
+      expect(subject.password).to eq "foobar"
     end
 
     describe "memoizing sentinel connections" do
