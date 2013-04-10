@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 1.2.0
+
+* Add redis synchrony support
+* Add redis authentication support
+
 ## 1.1.4
 
 * Fix discover_master procedure wich failover_reconnect_wait option

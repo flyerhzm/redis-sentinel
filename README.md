@@ -88,7 +88,9 @@ takes less than 30 seconds.
 * [Donald Plummer](https://github.com/dplummer) - Add wait / timeout for
   redis connection
 * [Rafał Michalski](https://github.com/royaltm) - Ensure promoted slave
-  become master
+  become master / Add redis synchrony support
+* [Zachary Anker](https://github.com/zanker) - Add redis authentication
+  support
 
 Please fork and contribute, any help in making this project better is appreciated!
 
