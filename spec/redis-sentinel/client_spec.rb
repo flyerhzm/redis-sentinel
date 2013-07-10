@@ -1,7 +1,8 @@
 require "spec_helper"
 
 describe Redis::Client do
-  let(:redis) { mock("Redis", :sentinel => ["remote.server", 8888])}
+  let(:client) { double("Client", :reconnect => true) }
+  let(:redis)  { double("Redis", :sentinel => ["remote.server", 8888], :client => client) }
 
   subject { Redis::Client.new(:master_name => "master", :master_password => "foobar",
                               :sentinels => [{:host => "localhost", :port => 26379},
@@ -170,4 +171,18 @@ describe Redis::Client do
       end
     end
   end
+
+  context "#reconnect_sentinels" do
+    it "calls reconnect on each sentinel client" do
+      subject.discover_master
+      sentinels = subject.send(:redis_sentinels)
+
+      sentinels.each do |config, sentinel|
+        sentinel.client.should_receive(:reconnect)
+      end
+
+      subject.reconnect_sentinels
+    end
+  end
+
 end
