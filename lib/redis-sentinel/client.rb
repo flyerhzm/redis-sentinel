@@ -78,6 +78,16 @@ class Redis::Client
       end
     end
 
+    def reconnect_with_sentinels
+      redis_sentinels.each do |config, sentinel|
+        sentinel.client.reconnect
+      end
+      reconnect_without_sentinels
+    end
+
+    alias reconnect_without_sentinels reconnect
+    alias reconnect reconnect_with_sentinels
+
   private
 
     def fetch_option(options, key)
