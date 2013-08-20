@@ -5,6 +5,7 @@ class Redis::Client
 
   class_eval do
     def initialize_with_sentinel(options={})
+      options = options.dup # Don't touch my options
       @master_name = fetch_option(options, :master_name)
       @master_password = fetch_option(options, :master_password)
       @sentinels = fetch_option(options, :sentinels)
