@@ -89,6 +89,21 @@ class Redis::Client
     alias reconnect_without_sentinels reconnect
     alias reconnect reconnect_with_sentinels
 
+    def call_with_readonly_protection(*args, &block)
+      tries = 0
+      call_without_readonly_protection(*args, &block)
+    rescue Redis::CommandError => e
+      if e.message == "READONLY You can't write against a read only slave."
+        reconnect
+        retry if (tries += 1) < 4
+      else
+        raise
+      end
+    end
+
+    alias call_without_readonly_protection call
+    alias call call_with_readonly_protection
+
   private
 
     def fetch_option(options, key)
