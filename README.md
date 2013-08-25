@@ -91,6 +91,12 @@ takes less than 30 seconds.
   become master / Add redis synchrony support
 * [Zachary Anker](https://github.com/zanker) - Add redis authentication
   support
+* [Nick Deteffen](https://github.com/nick-desteffen) - Add ability to
+  reconnect all redis sentinel clients
+* [Carlos Paramio](https://github.com/carlosparamio) - Avoid the config
+  gets modified
+* [Michael Gee](https://github.com/mikegee) - Reconnect if redis suddenly
+  becomes read-only.
 
 Please fork and contribute, any help in making this project better is appreciated!
 

@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.3.0
+
+* Add ability to reconnect all redis sentinel clients
+* Avoid the config gets modified
+* Reconnect if redis suddenly becones read-only
+
 ## 1.2.0
 
 * Add redis synchrony support
