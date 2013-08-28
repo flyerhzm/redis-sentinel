@@ -15,7 +15,7 @@ describe Redis::Client do
       expect(Redis::Client.new(:master_name => "master", :sentinels => [{:host => "localhost", :port => 26379}, {:host => "localhost", :port => 26380}])).to be_sentinel
     end
 
-    it "should not be true if not passing sentinels and maser_name options" do
+    it "should not be true if not passing sentinels and master_name options" do
       expect(Redis::Client.new).not_to be_sentinel
     end
 
