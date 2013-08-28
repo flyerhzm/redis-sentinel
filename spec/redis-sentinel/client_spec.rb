@@ -53,7 +53,7 @@ describe Redis::Client do
       expect(subject.password).to eq "foobar"
     end
 
-    it "should not update options" do
+    it "should not update options before newly promoted master is ready" do
       redis.should_receive(:sentinel).
             with("is-master-down-by-addr", "remote.server", 8888).twice.
             and_return([1, "abc"], [0, "?"])
