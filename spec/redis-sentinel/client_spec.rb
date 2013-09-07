@@ -172,13 +172,28 @@ describe Redis::Client do
     end
   end
 
-  context "#reconnect" do
-    it "calls reconnect on each sentinel client" do
+  context "#disconnect" do
+    it "calls disconnect on each sentinel client" do
       subject.stub(:connect)
       subject.discover_master
       subject.send(:redis_sentinels).each do |config, sentinel|
-        sentinel.client.should_receive(:reconnect)
+        sentinel.client.should_receive(:disconnect)
       end
+
+      subject.disconnect
+    end
+  end
+
+  context "#reconnect" do
+    it "effectively reconnects on each sentinel client" do
+      subject.stub(:connect)
+      subject.discover_master
+
+      subject.send(:redis_sentinels).each do |config, sentinel|
+        sentinel.client.should_receive(:disconnect)
+      end
+      # we assume that subject.connect will connect to a sentinel
+      subject.should_receive(:connect)
 
       subject.reconnect
     end
