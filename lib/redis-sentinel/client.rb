@@ -79,15 +79,15 @@ class Redis::Client
       end
     end
 
-    def reconnect_with_sentinels
+    def disconnect_with_sentinels
       redis_sentinels.each do |config, sentinel|
-        sentinel.client.reconnect
+        sentinel.client.disconnect
       end
-      reconnect_without_sentinels
+      disconnect_without_sentinels
     end
 
-    alias reconnect_without_sentinels reconnect
-    alias reconnect reconnect_with_sentinels
+    alias disconnect_without_sentinels disconnect
+    alias disconnect disconnect_with_sentinels
 
     def call_with_readonly_protection(*args, &block)
       tries = 0
