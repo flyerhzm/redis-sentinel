@@ -9,6 +9,7 @@ class Redis::Client
       @master_name = fetch_option(options, :master_name)
       @master_password = fetch_option(options, :master_password)
       @sentinels = fetch_option(options, :sentinels)
+      @sentinels.shuffle! if @sentinels
       @failover_reconnect_timeout = fetch_option(options, :failover_reconnect_timeout)
       @failover_reconnect_wait = fetch_option(options, :failover_reconnect_wait) ||
                                  DEFAULT_FAILOVER_RECONNECT_WAIT_SECONDS
