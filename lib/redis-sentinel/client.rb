@@ -66,7 +66,15 @@ class Redis::Client
           if !host && !port
             raise Redis::ConnectionError.new("No master named: #{@master_name}")
           end
-          is_down, runid = sentinel.sentinel("is-master-down-by-addr", host, port)
+          master_info = sentinel.sentinel("masters").map{ |e| e = Hash[*e.flatten] }
+          master_info.keep_if{ |e| e['name'] == @master_name }
+          if ! master_info.empty?
+            runid = master_info[0]['runid']
+          end
+          if ! runid
+            raise Redis::ConnectionError.new("No master named: #{@master_name}")
+          end
+          is_down, runid = sentinel.sentinel("is-master-down-by-addr", host, port, Time.now.to_i, runid)
           break
         rescue Redis::CannotConnectError
           try_next_sentinel
