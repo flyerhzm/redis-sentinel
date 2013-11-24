@@ -67,7 +67,8 @@ class Redis::Client
             raise Redis::ConnectionError.new("No master named: #{@master_name}")
           end
           master_info = sentinel.sentinel("masters").map{ |e| e = Hash[*e.flatten] }
-          if master_info.select{ |e| e['name'] == @master_name }
+          master_info.keep_if{ |e| e['name'] == @master_name }
+          if ! master_info.empty?
             runid = master_info[0]['runid']
           end
           if ! runid
