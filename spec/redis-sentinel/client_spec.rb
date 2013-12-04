@@ -4,11 +4,29 @@ describe Redis::Client do
   let(:client) { double("Client", :reconnect => true) }
   let(:redis)  { double("Redis", :sentinel => ["remote.server", 8888], :client => client) }
 
-  subject { Redis::Client.new(:master_name => "master", :master_password => "foobar",
-                              :sentinels => [{:host => "localhost", :port => 26379},
-                                             {:host => "localhost", :port => 26380}]) }
+  let(:sentinels) do
+    [
+      {:host => "localhost", :port => 26379},
+      {:host => "localhost", :port => 26380}
+    ]
+  end
 
-  before { Redis.stub(:new).and_return(redis) }
+  subject { Redis::Client.new(:master_name => "master", :master_password => "foobar",
+                              :sentinels => sentinels) }
+
+  before do
+    sentinels.stub(:shuffle!)
+    Redis.stub(:new).and_return(redis)
+  end
+
+  context "#initialize" do
+
+    it "shuffles the sentinel array" do
+      sentinels.should_receive(:shuffle!)
+      subject
+    end
+
+  end
 
   context "#sentinel?" do
     it "should be true if passing sentiels and master_name options" do
