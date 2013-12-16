@@ -9,24 +9,24 @@ describe Redis::Client do
     context "configured wait time" do
 
       it "uses the wait time and blocks em" do
-        Time.stub(:now).and_return(100, 101, 105)
+        allow(Time).to receive(:now).and_return(100, 101, 105)
         flag = false; EM.next_tick { flag = true }
-        subject.should_receive(:sleep).with(0.1).and_return(0.1)
+        expect(subject).to receive(:sleep).with(0.1).and_return(0.1)
         begin
           subject.auto_retry_with_timeout { raise Redis::CannotConnectError }
         rescue Redis::CannotConnectError
         end
-        flag.should be_false
+        expect(flag).to be_false
       end
 
       it "uses the wait time and doesn't block em" do
-        Time.stub(:now).and_return(100, 101, 105)
+        allow(Time).to receive(:now).and_return(100, 101, 105)
         flag = false; EM.next_tick { flag = true }
         begin
           subject.auto_retry_with_timeout { raise Redis::CannotConnectError }
         rescue Redis::CannotConnectError
         end
-        flag.should be_true
+        expect(flag).to be_true
       end
     end
   end

@@ -15,14 +15,14 @@ describe Redis::Client do
                               :sentinels => sentinels) }
 
   before do
-    sentinels.stub(:shuffle!)
-    Redis.stub(:new).and_return(redis)
+    allow(sentinels).to receive(:shuffle!)
+    allow(Redis).to receive(:new).and_return(redis)
   end
 
   context "#initialize" do
 
     it "shuffles the sentinel array" do
-      sentinels.should_receive(:shuffle!)
+      expect(sentinels).to receive(:shuffle!)
       subject
     end
 
@@ -54,15 +54,15 @@ describe Redis::Client do
 
   context "#discover_master" do
     it "gets the current master" do
-      redis.should_receive(:sentinel).
+      expect(redis).to receive(:sentinel).
             with("get-master-addr-by-name", "master")
-      redis.should_receive(:sentinel).
+      expect(redis).to receive(:sentinel).
             with("is-master-down-by-addr", "remote.server", 8888)
       subject.discover_master
     end
 
     it "should update options" do
-      redis.should_receive(:sentinel).
+      expect(redis).to receive(:sentinel).
             with("is-master-down-by-addr", "remote.server", 8888).once.
             and_return([0, "abc"])
       subject.discover_master
@@ -72,7 +72,7 @@ describe Redis::Client do
     end
 
     it "should not update options before newly promoted master is ready" do
-      redis.should_receive(:sentinel).
+      expect(redis).to receive(:sentinel).
             with("is-master-down-by-addr", "remote.server", 8888).twice.
             and_return([1, "abc"], [0, "?"])
       2.times do
@@ -86,9 +86,9 @@ describe Redis::Client do
     end
 
     it "should not use a password" do
-      Redis.should_receive(:new).with({:host => "localhost", :port => 26379})
-      redis.should_receive(:sentinel).with("get-master-addr-by-name", "master")
-      redis.should_receive(:sentinel).with("is-master-down-by-addr", "remote.server", 8888)
+      expect(Redis).to receive(:new).with({:host => "localhost", :port => 26379})
+      expect(redis).to receive(:sentinel).with("get-master-addr-by-name", "master")
+      expect(redis).to receive(:sentinel).with("is-master-down-by-addr", "remote.server", 8888)
 
       redis = Redis::Client.new(:master_name => "master", :sentinels => [{:host => "localhost", :port => 26379}])
       redis.discover_master
@@ -99,14 +99,14 @@ describe Redis::Client do
     end
 
     it "should select next sentinel" do
-      Redis.should_receive(:new).with({:host => "localhost", :port => 26379})
-      redis.should_receive(:sentinel).
+      expect(Redis).to receive(:new).with({:host => "localhost", :port => 26379})
+      expect(redis).to receive(:sentinel).
             with("get-master-addr-by-name", "master").
             and_raise(Redis::CannotConnectError)
-      Redis.should_receive(:new).with({:host => "localhost", :port => 26380})
-      redis.should_receive(:sentinel).
+      expect(Redis).to receive(:new).with({:host => "localhost", :port => 26380})
+      expect(redis).to receive(:sentinel).
             with("get-master-addr-by-name", "master")
-      redis.should_receive(:sentinel).
+      expect(redis).to receive(:sentinel).
             with("is-master-down-by-addr", "remote.server", 8888)
       subject.discover_master
       expect(subject.host).to eq "remote.server"
@@ -116,7 +116,7 @@ describe Redis::Client do
 
     describe "memoizing sentinel connections" do
       it "does not reconnect to the sentinels" do
-        Redis.should_receive(:new).once
+        expect(Redis).to receive(:new).once
 
         subject.discover_master
         subject.discover_master
@@ -129,7 +129,7 @@ describe Redis::Client do
       subject { Redis::Client.new }
 
       it "does not sleep" do
-        subject.should_not_receive(:sleep)
+        expect(subject).not_to receive(:sleep)
         expect do
           subject.auto_retry_with_timeout { raise Redis::CannotConnectError }
         end.to raise_error(Redis::CannotConnectError)
@@ -140,12 +140,12 @@ describe Redis::Client do
       subject { Redis::Client.new(:failover_reconnect_timeout => 3) }
 
       before(:each) do
-        subject.stub(:sleep)
+        allow(subject).to receive(:sleep)
       end
 
       it "only raises after the failover_reconnect_timeout" do
         called_counter = 0
-        Time.stub(:now).and_return(100, 101, 102, 103, 104, 105)
+        allow(Time).to receive(:now).and_return(100, 101, 102, 103, 104, 105)
 
         begin
           subject.auto_retry_with_timeout do
@@ -155,12 +155,12 @@ describe Redis::Client do
         rescue Redis::CannotConnectError
         end
 
-        called_counter.should == 4
+        expect(called_counter).to eq(4)
       end
 
       it "sleeps the default wait time" do
-        Time.stub(:now).and_return(100, 101, 105)
-        subject.should_receive(:sleep).with(0.1)
+        allow(Time).to receive(:now).and_return(100, 101, 105)
+        expect(subject).to receive(:sleep).with(0.1)
         begin
           subject.auto_retry_with_timeout { raise Redis::CannotConnectError }
         rescue Redis::CannotConnectError
@@ -168,7 +168,7 @@ describe Redis::Client do
       end
 
       it "does not catch other errors" do
-        subject.should_not_receive(:sleep)
+        expect(subject).not_to receive(:sleep)
         expect do
           subject.auto_retry_with_timeout { raise Redis::ConnectionError }
         end.to raise_error(Redis::ConnectionError)
@@ -179,8 +179,8 @@ describe Redis::Client do
                                     :failover_reconnect_wait => 0.01) }
 
         it "uses the configured wait time" do
-          Time.stub(:now).and_return(100, 101, 105)
-          subject.should_receive(:sleep).with(0.01)
+          allow(Time).to receive(:now).and_return(100, 101, 105)
+          expect(subject).to receive(:sleep).with(0.01)
           begin
             subject.auto_retry_with_timeout { raise Redis::CannotConnectError }
           rescue Redis::CannotConnectError
@@ -192,10 +192,10 @@ describe Redis::Client do
 
   context "#disconnect" do
     it "calls disconnect on each sentinel client" do
-      subject.stub(:connect)
+      allow(subject).to receive(:connect)
       subject.discover_master
       subject.send(:redis_sentinels).each do |config, sentinel|
-        sentinel.client.should_receive(:disconnect)
+        expect(sentinel.client).to receive(:disconnect)
       end
 
       subject.disconnect
@@ -204,14 +204,14 @@ describe Redis::Client do
 
   context "#reconnect" do
     it "effectively reconnects on each sentinel client" do
-      subject.stub(:connect)
+      allow(subject).to receive(:connect)
       subject.discover_master
 
       subject.send(:redis_sentinels).each do |config, sentinel|
-        sentinel.client.should_receive(:disconnect)
+        expect(sentinel.client).to receive(:disconnect)
       end
       # we assume that subject.connect will connect to a sentinel
-      subject.should_receive(:connect)
+      expect(subject).to receive(:connect)
 
       subject.reconnect
     end
