@@ -4,12 +4,14 @@ class Redis::Client
   DEFAULT_FAILOVER_RECONNECT_WAIT_SECONDS = 0.1
 
   class_eval do
+    attr_reader :current_sentinel
+    attr_reader :current_sentinel_options
+
     def initialize_with_sentinel(options={})
       options = options.dup # Don't touch my options
       @master_name = fetch_option(options, :master_name)
       @master_password = fetch_option(options, :master_password)
-      @sentinels = fetch_option(options, :sentinels)
-      @sentinels.shuffle! if @sentinels
+      @sentinels_options = fetch_option(options, :sentinels)
       @failover_reconnect_timeout = fetch_option(options, :failover_reconnect_timeout)
       @failover_reconnect_wait = fetch_option(options, :failover_reconnect_wait) ||
                                  DEFAULT_FAILOVER_RECONNECT_WAIT_SECONDS
@@ -35,7 +37,7 @@ class Redis::Client
     alias connect connect_with_sentinel
 
     def sentinel?
-      @master_name && @sentinels
+      @master_name && @sentinels_options
     end
 
     def auto_retry_with_timeout(&block)
@@ -50,40 +52,47 @@ class Redis::Client
     end
 
     def try_next_sentinel
-      @sentinels << @sentinels.shift
-      if @logger && @logger.debug?
-        @logger.debug "Trying next sentinel: #{@sentinels[0][:host]}:#{@sentinels[0][:port]}"
+      sentinel_options = @sentinels_options.shift
+      if sentinel_options
+        @logger.debug "Trying next sentinel: #{sentinel_options[:host]}:#{sentinel_options[:port]}" if @logger && @logger.debug?
+        @current_sentinel_options = sentinel_options
+        @current_sentinel = Redis.new sentinel_options
+      else
+        raise Redis::CannotConnectError
       end
-      return @sentinels[0]
+    end
+
+    def refresh_sentinels_list
+      responses = current_sentinel.sentinel("sentinels", @master_name)
+      @sentinels_options = responses.map do |response|
+        {:host => response[3], :port => response[5]}
+      end.unshift(:host => current_sentinel_options[:host], :port => current_sentinel_options[:port])
     end
 
     def discover_master
       while true
-        sentinel = redis_sentinels[@sentinels[0]]
+        try_next_sentinel
 
         begin
-          master_host, master_port = sentinel.sentinel("get-master-addr-by-name", @master_name)
-          if !master_host && !master_port
-            raise Redis::ConnectionError.new("No master named: #{@master_name}")
+          master_host, master_port = current_sentinel.sentinel("get-master-addr-by-name", @master_name)
+          if master_host && master_port
+            # An ip:port pair
+            @options.merge!(:host => master_host, :port => master_port.to_i, :password => @master_password)
+            refresh_sentinels_list
+            break
+          else
+            # A null reply
           end
-          is_down, runid = sentinel.sentinel("is-master-down-by-addr", master_host, master_port)
-          break
+        rescue Redis::CommandError
+          # An -IDONTKNOWN reply
         rescue Redis::CannotConnectError
-          try_next_sentinel
+          # faile to connect to current sentinel server
         end
-      end
-
-      if is_down.to_s == "1" || runid == '?'
-        raise Redis::CannotConnectError.new("The master: #{@master_name} is currently not available.")
-      else
-        @options.merge!(:host => master_host, :port => master_port.to_i, :password => @master_password)
       end
     end
 
     def disconnect_with_sentinels
-      redis_sentinels.each do |config, sentinel|
-        sentinel.client.disconnect
-      end
+      current_sentinel.client.disconnect if current_sentinel
       disconnect_without_sentinels
     end
 
@@ -109,12 +118,6 @@ class Redis::Client
 
     def fetch_option(options, key)
       options.delete(key) || options.delete(key.to_s)
-    end
-
-    def redis_sentinels
-      @redis_sentinels ||= Hash.new do |hash, config|
-        hash[config] = Redis.new(config)
-      end
     end
   end
 end
