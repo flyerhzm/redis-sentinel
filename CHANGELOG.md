@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.4.0
+
+* Rewrite sentinel client to follow http://redis.io/topics/sentinel
+
 ## 1.3.0
 
 * Add ability to reconnect all redis sentinel clients

@@ -55,6 +55,7 @@ Start 2 sentinel servers
 ```
 $ redis-server example/redis-sentinel1.conf --sentinel
 $ redis-server example/redis-sentinel2.conf --sentinel
+$ redis-server example/redis-sentinel3.conf --sentinel
 ```
 
 Run example/test.rb, which will query value of key "foo" every second.
@@ -84,19 +85,7 @@ takes less than 30 seconds.
 
 ## Authors and Contributors
 
-* [Richard Huang](https://github.com/flyerhzm) - Creator of the project
-* [Donald Plummer](https://github.com/dplummer) - Add wait / timeout for
-  redis connection
-* [Rafał Michalski](https://github.com/royaltm) - Ensure promoted slave
-  become master / Add redis synchrony support
-* [Zachary Anker](https://github.com/zanker) - Add redis authentication
-  support
-* [Nick DeSteffen](https://github.com/nick-desteffen) - Add ability to
-  reconnect all redis sentinel clients
-* [Carlos Paramio](https://github.com/carlosparamio) - Avoid the config
-  gets modified
-* [Michael Gee](https://github.com/mikegee) - Reconnect if redis suddenly
-  becomes read-only.
+[https://github.com/flyerhzm/redis-sentinel/graphs/contributors](https://github.com/flyerhzm/redis-sentinel/graphs/contributors)
 
 Please fork and contribute, any help in making this project better is appreciated!
 
