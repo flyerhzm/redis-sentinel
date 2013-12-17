@@ -13,6 +13,11 @@ Add this line to your application's Gemfile:
 
     gem 'redis-sentinel'
 
+If you are using redis-server less than 2.6.10, please use
+redis-sentinel 1.3.0
+
+    gem 'redis-sentinel', '~> 1.3.0'
+
 And then execute:
 
     $ bundle
