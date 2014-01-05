@@ -126,7 +126,7 @@ class Redis::Client
       sentinel_options = []
       options.each do |sentinel_option|
         if sentinel_option.is_a?(Hash)
-          sentinel_options << sentinel_options
+          sentinel_options << sentinel_option
         else
           uri = URI.parse(sentinel_option)
           sentinel_options << {
