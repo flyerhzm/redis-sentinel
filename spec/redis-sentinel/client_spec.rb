@@ -6,8 +6,8 @@ describe Redis::Client do
 
   let(:sentinels) do
     [
-      {:host => "localhost", :port => 26379},
-      {:host => "localhost", :port => 26380}
+      { :host => "localhost", :port => 26379 },
+      'sentinel://localhost:26380'
     ]
   end
 
@@ -39,6 +39,12 @@ describe Redis::Client do
     it "should not be true if passing master_name option but not sentinels option" do
       client = Redis::Client.new(:master_name => "master")
       expect(client).not_to be_sentinel
+    end
+
+    it "should be true if passing master_name, and sentinels as uri" do
+      client = Redis::Client.new(:master_name => "master",
+        :sentinels => %w(sentinel://localhost:26379 sentinel://localhost:26380))
+      expect(client).to be_sentinel
     end
   end
 
