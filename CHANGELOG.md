@@ -3,6 +3,7 @@
 ## 1.4.0
 
 * Rewrite sentinel client to follow http://redis.io/topics/sentinel
+* Parse uri string in sentinels array
 
 ## 1.3.0
 
