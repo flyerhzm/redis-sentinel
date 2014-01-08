@@ -32,6 +32,11 @@ Specify the sentinel servers and master name
 
     Redis.new(master_name: "master1", sentinels: [{host: "localhost", port: 26379}, {host: "localhost", port: 26380}])
 
+Sentinels can also be specified using a URI. This URI syntax is required when using Rails.config.cache_store:
+
+    config.cache_store = :redis_store, { master_name: "master1",
+                                         sentinels: ['sentinel://localhost:26379', 'sentinel://localhost:26380'] }
+
 There are two additional options:
 
 1. `:failover_reconnect_timeout` (seconds) will block for that long when
