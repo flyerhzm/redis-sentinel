@@ -5,7 +5,6 @@ class Redis::Client
 
   class_eval do
     attr_reader :current_sentinel
-    attr_reader :current_sentinel_options
 
     def initialize_with_sentinel(options={})
       options = options.dup # Don't touch my options
@@ -53,9 +52,9 @@ class Redis::Client
 
     def try_next_sentinel
       sentinel_options = @sentinels_options.shift
+      @sentinels_options.push sentinel_options
       if sentinel_options
         @logger.debug "Trying next sentinel: #{sentinel_options[:host]}:#{sentinel_options[:port]}" if @logger && @logger.debug?
-        @current_sentinel_options = sentinel_options
         @current_sentinel = Redis.new sentinel_options
       else
         raise Redis::CannotConnectError
@@ -66,7 +65,7 @@ class Redis::Client
       responses = current_sentinel.sentinel("sentinels", @master_name)
       @sentinels_options = responses.map do |response|
         {:host => response[3], :port => response[5]}
-      end.unshift(:host => current_sentinel_options[:host], :port => current_sentinel_options[:port])
+      end.unshift(:host => current_sentinel.host, :port => current_sentinel.port)
     end
 
     def discover_master

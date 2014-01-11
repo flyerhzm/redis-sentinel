@@ -2,7 +2,7 @@ require "spec_helper"
 
 describe Redis::Client do
   let(:client) { double("Client", :reconnect => true) }
-  let(:redis)  { double("Redis", :sentinel => ["remote.server", 8888], :client => client) }
+  let(:current_sentinel)  { double("Redis", :client => client, :host => "localhost", :port => 26379) }
 
   let(:sentinels) do
     [
@@ -14,9 +14,7 @@ describe Redis::Client do
   subject { Redis::Client.new(:master_name => "master", :master_password => "foobar",
                               :sentinels => sentinels) }
 
-  before do
-    allow(Redis).to receive(:new).and_return(redis)
-  end
+  before { allow(Redis).to receive(:new).and_return(current_sentinel) }
 
   context "#sentinel?" do
     it "should be true if passing sentiels and master_name options" do
@@ -50,8 +48,7 @@ describe Redis::Client do
 
   context "#try_next_sentinel" do
     it "returns next sentinel server" do
-      expect(Redis).to receive(:new).with(:host => "localhost", :port => 26379).and_return(redis)
-      subject.try_next_sentinel
+      expect(subject.try_next_sentinel).to eq current_sentinel
     end
 
     it "raises an error if no available sentinel server" do
@@ -65,10 +62,8 @@ describe Redis::Client do
 
   context "#refresh_sentinels_list" do
     it "gets all sentinels list" do
-      sentinel = double('sentinel')
-      allow(subject).to receive(:current_sentinel_options).and_return(:host => "localhost", :port => 26379)
-      expect(subject).to receive(:current_sentinel).and_return(sentinel)
-      expect(sentinel).to receive(:sentinel).with("sentinels", "master").and_return([
+      allow(subject).to receive(:current_sentinel).and_return(current_sentinel)
+      expect(current_sentinel).to receive(:sentinel).with("sentinels", "master").and_return([
         ["name", "localhost:26381", "ip", "localhost", "port", 26380],
         ["name", "localhost:26381", "ip", "localhost", "port", 26381]
       ])
@@ -82,21 +77,22 @@ describe Redis::Client do
   end
 
   context "#discover_master" do
+    before do
+      allow(subject).to receive(:try_next_sentinel)
+      allow(subject).to receive(:refresh_sentinels_list)
+      allow(subject).to receive(:current_sentinel).and_return(current_sentinel)
+    end
+
     it "updates master config options" do
-      expect(redis).to receive(:sentinel).with("get-master-addr-by-name", "master").and_return(["master", 8888])
-      expect(redis).to receive(:sentinel).with("sentinels", "master").and_return([{:host => "sentinel", :port => 8888}])
+      expect(current_sentinel).to receive(:sentinel).with("get-master-addr-by-name", "master").and_return(["master", 8888])
       subject.discover_master
       expect(subject.host).to eq "master"
       expect(subject.port).to eq 8888
     end
 
     it "selects next sentinel if failed to connect to current_sentinel" do
-      expect(subject).to receive(:current_sentinel).and_return(redis)
-      expect(redis).to receive(:sentinel).with("get-master-addr-by-name", "master").and_raise(Redis::CannotConnectError)
-      sentinel = double('sentinel')
-      expect(subject).to receive(:current_sentinel).and_return(sentinel)
-      expect(sentinel).to receive(:sentinel).with("get-master-addr-by-name", "master").and_return(["master", 8888])
-      allow(subject).to receive(:refresh_sentinels_list)
+      expect(current_sentinel).to receive(:sentinel).with("get-master-addr-by-name", "master").and_raise(Redis::CannotConnectError)
+      expect(current_sentinel).to receive(:sentinel).with("get-master-addr-by-name", "master").and_return(["master", 8888])
       subject.discover_master
       expect(subject.host).to eq "master"
       expect(subject.port).to eq 8888
@@ -114,9 +110,9 @@ describe Redis::Client do
 
       it "does not sleep" do
         expect(subject).not_to receive(:sleep)
-        expect do
+        expect {
           subject.auto_retry_with_timeout { raise Redis::CannotConnectError }
-        end.to raise_error(Redis::CannotConnectError)
+        }.to raise_error(Redis::CannotConnectError)
       end
     end
 
@@ -176,10 +172,7 @@ describe Redis::Client do
 
   context "#disconnect" do
     it "calls disconnect on each sentinel client" do
-      sentinel = double('sentinel')
-      client = double('client')
-      allow(subject).to receive(:current_sentinel).and_return(sentinel)
-      expect(sentinel).to receive(:client).and_return(client)
+      allow(subject).to receive(:current_sentinel).and_return(current_sentinel)
       expect(client).to receive(:disconnect)
       subject.disconnect
     end
