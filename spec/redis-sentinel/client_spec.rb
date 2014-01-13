@@ -50,14 +50,6 @@ describe Redis::Client do
     it "returns next sentinel server" do
       expect(subject.try_next_sentinel).to eq current_sentinel
     end
-
-    it "raises an error if no available sentinel server" do
-      client = Redis::Client.new(
-        :master_name => "master",
-        :sentinels => []
-      )
-      expect { client.try_next_sentinel }.to raise_error(Redis::CannotConnectError)
-    end
   end
 
   context "#refresh_sentinels_list" do

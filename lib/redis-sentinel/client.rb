@@ -53,12 +53,9 @@ class Redis::Client
     def try_next_sentinel
       sentinel_options = @sentinels_options.shift
       @sentinels_options.push sentinel_options
-      if sentinel_options
-        @logger.debug "Trying next sentinel: #{sentinel_options[:host]}:#{sentinel_options[:port]}" if @logger && @logger.debug?
-        @current_sentinel = Redis.new sentinel_options
-      else
-        raise Redis::CannotConnectError
-      end
+
+      @logger.debug "Trying next sentinel: #{sentinel_options[:host]}:#{sentinel_options[:port]}" if @logger && @logger.debug?
+      @current_sentinel = Redis.new sentinel_options
     end
 
     def refresh_sentinels_list
