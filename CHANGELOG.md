@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.4.1
+
+* Fix only one sentinel client reconnect issue
+
 ## 1.4.0
 
 * Rewrite sentinel client to follow http://redis.io/topics/sentinel
