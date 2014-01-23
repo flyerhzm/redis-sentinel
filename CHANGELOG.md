@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.4.2
+
+* Fix sentinel reconnection broken
+
 ## 1.4.1
 
 * Fix only one sentinel client reconnect issue
