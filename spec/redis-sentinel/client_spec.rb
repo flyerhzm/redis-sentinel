@@ -2,12 +2,13 @@ require "spec_helper"
 
 describe Redis::Client do
   let(:client) { double("Client", :reconnect => true) }
-  let(:current_sentinel)  { double("Redis", :client => client, :host => "localhost", :port => 26379) }
+  let(:current_sentinel)  { double("Redis", :client => client) }
 
   let(:sentinels) do
     [
       { :host => "localhost", :port => 26379 },
-      'sentinel://localhost:26380'
+      'sentinel://localhost:26380',
+      { :url => 'sentinel://localhost:26381' },
     ]
   end
 
@@ -15,6 +16,16 @@ describe Redis::Client do
                               :sentinels => sentinels) }
 
   before { allow(Redis).to receive(:new).and_return(current_sentinel) }
+
+  context "new instances" do
+    it "should parse sentinel options" do
+      expect(subject.instance_variable_get(:@sentinels_options)).to eq [
+        {:host=>"localhost", :port=>26379},
+        {:host=>"localhost", :port=>26380},
+        {:host=>"localhost", :port=>26381}
+      ]
+    end
+  end
 
   context "#sentinel?" do
     it "should be true if passing sentiels and master_name options" do
@@ -57,13 +68,15 @@ describe Redis::Client do
       allow(subject).to receive(:current_sentinel).and_return(current_sentinel)
       expect(current_sentinel).to receive(:sentinel).with("sentinels", "master").and_return([
         ["name", "localhost:26381", "ip", "localhost", "port", 26380],
-        ["name", "localhost:26381", "ip", "localhost", "port", 26381]
+        ["name", "localhost:26381", "ip", "localhost", "port", 26381],
+        ["name", "localhost:26381", "ip", "localhost", "port", 26382],
       ])
       subject.refresh_sentinels_list
       expect(subject.instance_variable_get(:@sentinels_options)).to eq [
         {:host => "localhost", :port => 26379},
         {:host => "localhost", :port => 26380},
-        {:host => "localhost", :port => 26381}
+        {:host => "localhost", :port => 26381},
+        {:host => "localhost", :port => 26382},
       ]
     end
   end
@@ -88,6 +101,19 @@ describe Redis::Client do
       subject.discover_master
       expect(subject.host).to eq "master"
       expect(subject.port).to eq 8888
+    end
+
+    it "selects next sentinel if sentinel doesn't know" do
+      expect(current_sentinel).to receive(:sentinel).with("get-master-addr-by-name", "master").and_raise(Redis::CommandError.new("IDONTKNOW: No idea"))
+      expect(current_sentinel).to receive(:sentinel).with("get-master-addr-by-name", "master").and_return(["master", 8888])
+      subject.discover_master
+      expect(subject.host).to eq "master"
+      expect(subject.port).to eq 8888
+    end
+
+    it "raises error if try_next_sentinel raises error" do
+      expect(current_sentinel).to receive(:sentinel).with("get-master-addr-by-name", "master").and_raise(Redis::CommandError.new("ERR: No such command"))
+      expect { subject.discover_master }.to raise_error(Redis::CommandError)
     end
 
     it "raises error if try_next_sentinel raises error" do

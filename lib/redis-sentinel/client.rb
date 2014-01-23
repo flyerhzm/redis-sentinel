@@ -36,7 +36,7 @@ class Redis::Client
     alias connect connect_with_sentinel
 
     def sentinel?
-      @master_name && @sentinels_options
+      !!(@master_name && @sentinels_options)
     end
 
     def auto_retry_with_timeout(&block)
@@ -59,10 +59,10 @@ class Redis::Client
     end
 
     def refresh_sentinels_list
-      responses = current_sentinel.sentinel("sentinels", @master_name)
-      @sentinels_options = responses.map do |response|
-        {:host => response[3], :port => response[5]}
-      end.unshift(:host => current_sentinel.host, :port => current_sentinel.port)
+      current_sentinel.sentinel("sentinels", @master_name).each do |response|
+        @sentinels_options << {:host => response[3], :port => response[5]}
+      end
+      @sentinels_options.uniq! {|h| h.values_at(:host, :port) }
     end
 
     def discover_master
@@ -79,8 +79,8 @@ class Redis::Client
           else
             # A null reply
           end
-        rescue Redis::CommandError
-          # An -IDONTKNOWN reply
+        rescue Redis::CommandError => e
+          raise unless e.message.include?("IDONTKNOW")
         rescue Redis::CannotConnectError
           # faile to connect to current sentinel server
         end
@@ -120,14 +120,16 @@ class Redis::Client
       return if options.nil?
 
       sentinel_options = []
-      options.each do |sentinel_option|
-        if sentinel_option.is_a?(Hash)
-          sentinel_options << sentinel_option
+      options.each do |opts|
+        opts = opts[:url] if opts.is_a?(Hash) && opts.key?(:url)
+        case opts
+        when Hash
+          sentinel_options << opts
         else
-          uri = URI.parse(sentinel_option)
+          uri = URI.parse(opts)
           sentinel_options << {
-              host: uri.host,
-              port: uri.port
+            host: uri.host,
+            port: uri.port
           }
         end
       end
