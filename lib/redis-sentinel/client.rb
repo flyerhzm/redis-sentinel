@@ -62,7 +62,8 @@ class Redis::Client
       current_sentinel.sentinel("sentinels", @master_name).each do |response|
         @sentinels_options << {:host => response[3], :port => response[5]}
       end
-      @sentinels_options.uniq! {|h| h.values_at(:host, :port) }
+      @sentinels_options.uniq!
+      @sentinels_options.each {|h| h.values_at(:host, :port) }
     end
 
     def discover_master
