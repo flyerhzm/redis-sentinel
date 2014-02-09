@@ -1,5 +1,5 @@
 class Redis
   module Sentinel
-    VERSION = "1.4.4"
+    VERSION = "1.4.3"
   end
 end
