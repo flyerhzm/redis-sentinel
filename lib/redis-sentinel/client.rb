@@ -82,7 +82,7 @@ class Redis::Client
         rescue Redis::CommandError => e
           raise unless e.message.include?("IDONTKNOW")
         rescue Redis::CannotConnectError
-          # faile to connect to current sentinel server
+          # failed to connect to current sentinel server
         end
       end
     end
@@ -96,21 +96,33 @@ class Redis::Client
     alias disconnect disconnect_with_sentinels
 
     def call_with_readonly_protection(*args, &block)
-      tries = 0
-      call_without_readonly_protection(*args, &block)
-    rescue Redis::CommandError => e
-      if e.message == "READONLY You can't write against a read only slave."
-        reconnect
-        retry if (tries += 1) < 4
-      else
-        raise
-      end
+      readonly_protection_with_timeout(:call_without_readonly_protection, *args, &block)
     end
 
     alias call_without_readonly_protection call
     alias call call_with_readonly_protection
 
+    def call_pipeline_with_readonly_protection(*args, &block)
+      readonly_protection_with_timeout(:call_pipeline_without_readonly_protection, *args, &block)
+    end
+
+    alias call_pipeline_without_readonly_protection call_pipeline
+    alias call_pipeline call_pipeline_with_readonly_protection
+
   private
+    def readonly_protection_with_timeout(method, *args, &block)
+      deadline = @failover_reconnect_timeout.to_i + Time.now.to_f
+      send(method, *args, &block)
+    rescue Redis::CommandError => e
+      if e.message.include? "READONLY You can't write against a read only slave."
+        raise if Time.now.to_f > deadline
+        sleep @failover_reconnect_wait
+        reconnect
+        retry
+      else
+        raise
+      end
+    end
 
     def fetch_option(options, key)
       options.delete(key) || options.delete(key.to_s)
