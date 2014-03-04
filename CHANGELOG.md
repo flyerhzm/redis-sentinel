@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.4.3
+
+* Fix for pipelined requests and readonly calls
+
 ## 1.4.2
 
 * Fix sentinel reconnection broken
