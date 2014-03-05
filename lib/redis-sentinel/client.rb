@@ -87,6 +87,36 @@ class Redis::Client
       end
     end
 
+    def discover_slaves
+      while true
+        try_next_sentinel
+
+        begin
+          slaves_info = current_sentinel.sentinel("slaves", @master_name)
+          @slaves = slaves_info.map do |info|
+            info = Hash[*info]
+            ::Redis.new host: info['ip'], port: info['port'], driver: options[:driver]
+          end
+
+          break
+        rescue Redis::CommandError => e
+          raise unless e.message.include?("IDONTKNOW")
+        rescue Redis::CannotConnectError
+          # failed to connect to current sentinel server
+        end
+      end
+    end
+
+    def slaves
+      discover_slaves
+      @slaves
+    end
+
+    def all_clients
+      clients = slaves
+      clients.unshift ::Redis.new @options
+    end
+
     def disconnect_with_sentinels
       current_sentinel.client.disconnect if current_sentinel
       disconnect_without_sentinels
