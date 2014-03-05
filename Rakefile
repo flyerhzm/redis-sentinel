@@ -16,4 +16,12 @@ RSpec::Core::RakeTask.new('spec:progress') do |spec|
   spec.pattern = "spec/**/*_spec.rb"
 end
 
+task :console do
+  require 'irb'
+  require 'irb/completion'
+  require 'redis-sentinel'
+  ARGV.clear
+  IRB.start
+end
+
 task :default => :spec
