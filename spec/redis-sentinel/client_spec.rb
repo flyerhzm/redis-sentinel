@@ -136,7 +136,6 @@ describe Redis::Client do
       allow(subject).to receive(:refresh_sentinels_list)
       allow(subject).to receive(:current_sentinel).and_return(current_sentinel)
       expect(current_sentinel).to receive(:sentinel).with("slaves", "master").and_return(slaves_reply)
-      expect(current_sentinel).to receive(:sentinel).with("get-master-addr-by-name", "master").and_return(["master", 8888])
 
       slaves = slaves_reply.map do |info|
         info = Hash[*info]
