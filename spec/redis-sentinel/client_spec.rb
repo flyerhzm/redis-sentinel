@@ -12,10 +12,16 @@ describe Redis::Client do
     ]
   end
 
+  let(:slaves_reply) do
+    [
+      ["ip", "slave-0", "port", "6379"],
+      ["ip", "slave-1", "port", "6380"],
+      ["ip", "slave-2", "port", "6381"]
+    ]
+  end
+
   subject { Redis::Client.new(:master_name => "master", :master_password => "foobar",
                               :sentinels => sentinels) }
-
-  before { allow(Redis).to receive(:new).and_return(current_sentinel) }
 
   context "new instances" do
     it "should parse sentinel options" do
@@ -58,6 +64,8 @@ describe Redis::Client do
   end
 
   context "#try_next_sentinel" do
+    before { allow(Redis).to receive(:new).and_return(current_sentinel) }
+
     it "returns next sentinel server" do
       expect(subject.try_next_sentinel).to eq current_sentinel
     end
@@ -119,6 +127,32 @@ describe Redis::Client do
     it "raises error if try_next_sentinel raises error" do
       expect(subject).to receive(:try_next_sentinel).and_raise(Redis::CannotConnectError)
       expect { subject.discover_master }.to raise_error(Redis::CannotConnectError)
+    end
+  end
+
+  context "#discover_slaves" do
+    before do
+      allow(subject).to receive(:try_next_sentinel)
+      allow(subject).to receive(:refresh_sentinels_list)
+      allow(subject).to receive(:current_sentinel).and_return(current_sentinel)
+      expect(current_sentinel).to receive(:sentinel).with("slaves", "master").and_return(slaves_reply)
+
+      slaves = slaves_reply.map do |info|
+        info = Hash[*info]
+        double("Redis", :host => info['ip'], :port => info['port'])
+      end
+
+      allow(Redis).to receive(:new).and_return(*slaves)
+    end
+
+    it "discovers slaves correctly" do
+      slaves = subject.slaves
+
+      expect(slaves.size).to eq 3
+      3.times do |i|
+        expect(slaves[i].host).to eq "slave-#{i.to_s}"
+        expect(slaves[i].port.to_i).to eq (6379 + i)
+      end
     end
   end
 

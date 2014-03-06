@@ -46,6 +46,20 @@ There are two additional options:
 2. `:failover_reconnect_wait` (seconds) how long to sleep after each
    failed reconnect during a failover event. Defaults to 0.1s.
 
+## Slaves clients
+
+If you need it, you can get an array of Redis clients, each pointing to one of the slaves:
+
+    client = Redis.new(master_name: "master1", sentinels: [{host: "localhost", port: 26379}, {host: "localhost", port: 26380}])
+    client.slaves
+    # => [#<Redis client v3.0.7 for redis://127.0.0.1:6380/0>, #<Redis client v3.0.7 for redis://127.0.0.1:6381/0>]
+
+You can also get an array of all the clients (master + slaves):
+
+    client = Redis.new(master_name: "master1", sentinels: [{host: "localhost", port: 26379}, {host: "localhost", port: 26380}])
+    client.all_clients
+    # => [#<Redis client v3.0.7 for redis://127.0.0.1:6379/0>, #<Redis client v3.0.7 for redis://127.0.0.1:6380/0>, #<Redis client v3.0.7 for redis://127.0.0.1:6381/0>]
+
 ## Example
 
 Start redis master server, listen on port 16379
