@@ -95,7 +95,7 @@ class Redis::Client
           slaves_info = current_sentinel.sentinel("slaves", @master_name)
           @slaves = slaves_info.map do |info|
             info = Hash[*info]
-            ::Redis.new host: info['ip'], port: info['port'], driver: options[:driver]
+            ::Redis.new :host => info['ip'], :port => info['port'], :driver => options[:driver]
           end
 
           break
@@ -170,8 +170,8 @@ class Redis::Client
         else
           uri = URI.parse(opts)
           sentinel_options << {
-            host: uri.host,
-            port: uri.port
+            :host => uri.host,
+            :port => uri.port
           }
         end
       end
