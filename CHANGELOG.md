@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 1.4.4
+
+* Allow client to return list of slaves
+* Fix compatibility issues with ruby 1.8.7
+
 ## 1.4.3
 
 * Fix for pipelined requests and readonly calls
