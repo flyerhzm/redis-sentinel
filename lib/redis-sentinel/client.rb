@@ -15,6 +15,8 @@ class Redis::Client
       @failover_reconnect_wait = fetch_option(options, :failover_reconnect_wait) ||
                                  DEFAULT_FAILOVER_RECONNECT_WAIT_SECONDS
 
+      Thread.new { watch_sentinel } if sentinel? && !fetch_option(options, :async)
+
       initialize_without_sentinel(options)
     end
 
@@ -138,6 +140,33 @@ class Redis::Client
 
     alias call_pipeline_without_readonly_protection call_pipeline
     alias call_pipeline call_pipeline_with_readonly_protection
+
+    def watch_sentinel
+      while true
+        sentinel = Redis.new(@sentinels_options[0])
+
+        begin
+          sentinel.psubscribe("*") do |on|
+            on.pmessage do |pattern, channel, message|
+              next if channel != "+switch-master"
+
+              master_name, old_host, old_port, new_host, new_port = message.split(" ")
+
+              next if master_name != @master_name
+
+              @options.merge!(host: new_host, port: new_port.to_i)
+
+              @logger.debug "Failover: #{old_host}:#{old_port} => #{new_host}:#{new_port}" if @logger && @logger.debug?
+
+              disconnect
+            end
+          end
+        rescue Redis::CannotConnectError
+          try_next_sentinel
+          sleep 1
+        end
+      end
+    end
 
   private
     def readonly_protection_with_timeout(method, *args, &block)

@@ -5,7 +5,8 @@ require "eventmachine"
 describe Redis::Client do
   context "#auto_retry_with_timeout" do
     subject { described_class.new(:failover_reconnect_timeout => 3,
-                                :failover_reconnect_wait => 0.1) }
+                                  :failover_reconnect_wait => 0.1,
+                                  :async => true) }
     context "configured wait time" do
 
       it "uses the wait time and blocks em" do
