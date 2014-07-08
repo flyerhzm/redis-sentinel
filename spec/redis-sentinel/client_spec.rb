@@ -25,7 +25,7 @@ describe Redis::Client do
 
   context "new instances" do
     it "should parse sentinel options" do
-      expect(subject.instance_variable_get(:@sentinels_options)).to eq [
+      expect(subject.instance_variable_get(:@sentinels_options)).to match_array [
         {:host=>"localhost", :port=>26379},
         {:host=>"localhost", :port=>26380},
         {:host=>"localhost", :port=>26381}
