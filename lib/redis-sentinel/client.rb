@@ -66,7 +66,9 @@ class Redis::Client
     end
 
     def discover_master
+      attempts = 0
       while true
+        attempts += 1
         try_next_sentinel
 
         begin
@@ -83,6 +85,7 @@ class Redis::Client
           raise unless e.message.include?("IDONTKNOW")
         rescue Redis::CannotConnectError
           # failed to connect to current sentinel server
+          raise Redis::CannotConnectError if attempts > @sentinels_options.count
         end
       end
     end
