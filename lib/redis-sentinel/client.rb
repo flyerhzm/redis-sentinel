@@ -177,9 +177,9 @@ class Redis::Client
       send(method, *args, &block)
     rescue Redis::CommandError => e
       if e.message.include? "READONLY You can't write against a read only slave."
+        reconnect
         raise if Time.now.to_f > deadline
         sleep @failover_reconnect_wait
-        reconnect
         retry
       else
         raise
