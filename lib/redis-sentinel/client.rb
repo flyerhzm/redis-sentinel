@@ -100,7 +100,7 @@ class Redis::Client
           slaves_info = current_sentinel.sentinel("slaves", @master_name)
           @slaves = slaves_info.map do |info|
             info = Hash[*info]
-            ::Redis.new :host => info['ip'], :port => info['port'], :driver => info[:driver]
+            ::Redis.new(@options.merge(:host => info['ip'], :port => info['port'], :driver => info[:driver]))
           end
 
           break
