@@ -37,7 +37,10 @@ Sentinels can also be specified using a URI. This URI syntax is required when us
     config.cache_store = :redis_store, { master_name: "master1",
                                          sentinels: ['sentinel://localhost:26379', 'sentinel://localhost:26380'] }
 
-If none of the sentinel servers can be reached, a Redis::CannotConnectError will be thrown.
+After doing the above, you might still see `#<Redis client v3.1.0 for redis://localhost:6379/0>`. 
+This is fine because redis-sentinel will only try to connect when it is actually required. 
+
+However, if none of the sentinel servers can be reached, a Redis::CannotConnectError will be thrown.
 
 There are two additional options:
 
