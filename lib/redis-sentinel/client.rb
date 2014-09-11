@@ -45,7 +45,7 @@ class Redis::Client
       deadline = @failover_reconnect_timeout.to_i + Time.now.to_f
       begin
         block.call
-      rescue Redis::CannotConnectError
+      rescue Redis::CannotConnectError, Errno::EHOSTDOWN, Errno::EHOSTUNREACH
         raise if Time.now.to_f > deadline
         sleep @failover_reconnect_wait
         retry
@@ -85,9 +85,9 @@ class Redis::Client
           end
         rescue Redis::CommandError => e
           raise unless e.message.include?("IDONTKNOW")
-        rescue Redis::CannotConnectError
+        rescue Redis::CannotConnectError, Errno::EHOSTDOWN, Errno::EHOSTUNREACH => e
           # failed to connect to current sentinel server
-          raise Redis::CannotConnectError if attempts > @sentinels_options.count
+          raise e if attempts > @sentinels_options.count
         end
       end
     end
@@ -106,7 +106,7 @@ class Redis::Client
           break
         rescue Redis::CommandError => e
           raise unless e.message.include?("IDONTKNOW")
-        rescue Redis::CannotConnectError
+        rescue Redis::CannotConnectError, Errno::EHOSTDOWN, Errno::EHOSTUNREACH
           # failed to connect to current sentinel server
         end
       end
@@ -164,7 +164,7 @@ class Redis::Client
               disconnect
             end
           end
-        rescue Redis::CannotConnectError
+        rescue Redis::CannotConnectError, Errno::EHOSTDOWN, Errno::EHOSTUNREACH
           try_next_sentinel
           sleep 1
         end
