@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 1.5.0
+
+* Subscribe +switch-master again
+* Prevents master discovery to get stuck in endless loop if sentinels
+  are not available
+* Always reconnect at least once, even if reconnect timeout is 0
+* Catch networking errors which bubble up past redis
+
 ## 1.4.4
 
 * Allow client to return list of slaves
