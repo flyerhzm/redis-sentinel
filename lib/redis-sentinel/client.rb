@@ -15,7 +15,7 @@ class Redis::Client
       @failover_reconnect_wait = fetch_option(options, :failover_reconnect_wait) ||
                                  DEFAULT_FAILOVER_RECONNECT_WAIT_SECONDS
 
-      Thread.new { watch_sentinel } if sentinel? && !fetch_option(options, :async)
+      @watch_thread = Thread.new { watch_sentinel } if sentinel? && !fetch_option(options, :async)
 
       initialize_without_sentinel(options)
     end
@@ -124,6 +124,7 @@ class Redis::Client
 
     def disconnect_with_sentinels
       current_sentinel.client.disconnect if current_sentinel
+      @watch_thread.kill if @watch_thread
       disconnect_without_sentinels
     end
 
