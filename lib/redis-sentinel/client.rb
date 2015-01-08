@@ -157,7 +157,7 @@ class Redis::Client
 
               next if master_name != @master_name
 
-              @options.merge!(host: new_host, port: new_port.to_i)
+              @options.merge!(:host => new_host, :port => new_port.to_i)
 
               @logger.debug "Failover: #{old_host}:#{old_port} => #{new_host}:#{new_port}" if @logger && @logger.debug?
 
