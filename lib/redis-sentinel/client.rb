@@ -80,15 +80,14 @@ class Redis::Client
             @options.merge!(:host => master_host, :port => master_port.to_i, :password => @master_password)
             refresh_sentinels_list
             break
-          else
-            # A null reply
           end
         rescue Redis::CommandError => e
           raise unless e.message.include?("IDONTKNOW")
         rescue Redis::CannotConnectError, Errno::EHOSTDOWN, Errno::EHOSTUNREACH => e
           # failed to connect to current sentinel server
-          raise e if attempts > @sentinels_options.count
         end
+
+        raise e if attempts > @sentinels_options.count
       end
     end
 
