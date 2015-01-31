@@ -80,6 +80,8 @@ class Redis::Client
             @options.merge!(:host => master_host, :port => master_port.to_i, :password => @master_password)
             refresh_sentinels_list
             break
+          else
+            raise "Cannot find master addr of #{@master_name}"
           end
         rescue Redis::CommandError => e
           raise unless e.message.include?("IDONTKNOW")
@@ -87,7 +89,7 @@ class Redis::Client
           # failed to connect to current sentinel server
         end
 
-        raise e if attempts > @sentinels_options.count
+        raise "Cannot connect to master (too many attempts)" if attempts > @sentinels_options.count
       end
     end
 
