@@ -38,7 +38,7 @@ class Redis::Client
     alias connect connect_with_sentinel
 
     def sentinel?
-      !!(@master_name && @sentinels_options)
+      !@master_name.nil? && @sentinels_options && @sentinel_options.length > 0
     end
 
     def auto_retry_with_timeout(&block)
