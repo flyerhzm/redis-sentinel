@@ -38,7 +38,7 @@ class Redis::Client
     alias connect connect_with_sentinel
 
     def sentinel?
-      !!(@master_name && @sentinels_options)
+      !@master_name.nil? && @sentinels_options && @sentinels_options.length > 0
     end
 
     def auto_retry_with_timeout(&block)
@@ -81,14 +81,15 @@ class Redis::Client
             refresh_sentinels_list
             break
           else
-            # A null reply
+            raise "Cannot find master addr of #{@master_name}"
           end
         rescue Redis::CommandError => e
           raise unless e.message.include?("IDONTKNOW")
         rescue Redis::CannotConnectError, Errno::EHOSTDOWN, Errno::EHOSTUNREACH => e
           # failed to connect to current sentinel server
-          raise e if attempts > @sentinels_options.count
         end
+
+        raise "Cannot connect to master (too many attempts)" if attempts > @sentinels_options.count
       end
     end
 
