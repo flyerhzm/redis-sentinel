@@ -10,7 +10,7 @@ class Redis::Client
       options = options.dup # Don't touch my options
       @master_name = fetch_option(options, :master_name)
       @master_password = fetch_option(options, :master_password)
-      @sentinels_options = _parse_sentinel_options(fetch_option(options, :sentinels))
+      @sentinels_options = parse_sentinel_options(fetch_option(options, :sentinels))
       @failover_reconnect_timeout = fetch_option(options, :failover_reconnect_timeout)
       @failover_reconnect_wait = fetch_option(options, :failover_reconnect_wait) ||
                                  DEFAULT_FAILOVER_RECONNECT_WAIT_SECONDS
@@ -192,7 +192,7 @@ class Redis::Client
       options.delete(key) || options.delete(key.to_s)
     end
 
-    def _parse_sentinel_options(options)
+    def parse_sentinel_options(options)
       return if options.nil?
 
       sentinel_options = []
