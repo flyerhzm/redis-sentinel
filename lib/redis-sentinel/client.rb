@@ -153,17 +153,22 @@ class Redis::Client
         begin
           sentinel.psubscribe("*") do |on|
             on.pmessage do |pattern, channel, message|
-              next if channel != "+switch-master"
-
-              master_name, old_host, old_port, new_host, new_port = message.split(" ")
-
-              next if master_name != @master_name
-
-              @options.merge!(:host => new_host, :port => new_port.to_i)
-
-              @logger.debug "Failover: #{old_host}:#{old_port} => #{new_host}:#{new_port}" if @logger && @logger.debug?
-
-              disconnect
+              case channel
+              when "+switch-master"
+                master_name, old_host, old_port, new_host, new_port = message.split(" ")
+                next if master_name != @master_name
+                @options.merge!(:host => new_host, :port => new_port.to_i)
+                @logger.debug "Failover: #{old_host}:#{old_port} => #{new_host}:#{new_port}" if @logger && @logger.debug?
+                disconnect
+              when "+sentinel"
+                sentinel_name, sentinel_host, sentinel_port, _, master_name, master_host, master_port = message.split(" ")
+                @sentinels_options << { :host => sentinel_host, :port => sentinel_port }
+              when "-sentinel"
+                sentinel_name, sentinel_host, sentinel_port, _, master_name, master_host, master_port = message.split(" ")
+                @sentinels_options.delete({ :host => sentinel_host, :port => sentinel_port })
+              else
+                # nothing to do
+              end
             end
           end
         rescue Redis::CannotConnectError, Errno::EHOSTDOWN, Errno::EHOSTUNREACH
