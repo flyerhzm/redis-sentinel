@@ -1,4 +1,7 @@
-# Redis::Sentinel
+# Redis::Sentinel (Deprecated)
+
+[redis](https://github.com/redis/redis-rb) gem supports sentinel
+from version 3.2, redis-sentinel is not necessary.
 
 Another redis automatic master/slave failover solution for ruby by
 using built-in redis sentinel.
