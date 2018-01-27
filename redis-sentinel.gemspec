@@ -17,7 +17,13 @@ Gem::Specification.new do |gem|
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ["lib"]
 
-  gem.add_dependency "redis"
+  # Sentinel support was added to the `redis` gem in 3.2.0. This gem is purely
+  # incompatible with that version and will behave very improperly by forcing a
+  # connection to Redis on localhost:6379 regardless of the host that Redis
+  # Sentinel gave it. In my tests 3.1.0 works, but you should upgrade to
+  # `redis` 3.2.0+ without `redis-sentinel` instead.
+  gem.add_dependency "redis", '< 3.2.0'
+
   gem.add_development_dependency "rake"
   gem.add_development_dependency "rspec"
   gem.add_development_dependency "eventmachine"
